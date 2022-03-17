@@ -136,7 +136,7 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet:
     left.union(right).filterAcc(p, newAcc)
   }
 
-  override def union(that: TweetSet): TweetSet = left.union(right).union(that).incl(elem)
+  override def union(that: TweetSet): TweetSet = right.union(left.union(that)).incl(elem)
 
   override def mostRetweeted: Tweet = {
     (left, right) match {
