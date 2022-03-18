@@ -2,13 +2,15 @@ package objsets
 
 import TweetReader.*
 
+import scala.annotation.tailrec
+
 /**
  * A class to represent tweets.
  */
 class Tweet(val user: String, val text: String, val retweets: Int):
   override def toString: String =
     "User: " + user + "\n" +
-    "Text: " + text + " [" + retweets + "]"
+      "Text: " + text + " [" + retweets + "]"
 
 /**
  * This represents a set of objects of type `Tweet` in the form of a binary search
@@ -31,7 +33,7 @@ class Tweet(val user: String, val text: String, val retweets: Int):
  *
  * [1] http://en.wikipedia.org/wiki/Binary_search_tree
  */
-abstract class TweetSet extends TweetSetInterface:
+abstract class TweetSet extends TweetSetInterface :
 
   /**
    * This method takes a predicate and returns a subset of all the elements
@@ -106,7 +108,7 @@ abstract class TweetSet extends TweetSetInterface:
    */
   def foreach(f: Tweet => Unit): Unit
 
-class Empty extends TweetSet:
+class Empty extends TweetSet :
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = acc
 
   override def union(that: TweetSet): TweetSet = that
@@ -129,17 +131,19 @@ class Empty extends TweetSet:
 
   def foreach(f: Tweet => Unit): Unit = ()
 
-class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet:
+class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet :
 
-  def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = {
-    val newAcc = if (p(elem)) then acc.incl(elem) else acc
+  def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet =
+    val newAcc = if p(elem) then
+      acc.incl(elem)
+    else
+      acc
     left.union(right).filterAcc(p, newAcc)
-  }
 
   override def union(that: TweetSet): TweetSet = right.union(left.union(that)).incl(elem)
 
-  override def mostRetweeted: Tweet = {
-    (left, right) match {
+  override def mostRetweeted: Tweet =
+    (left, right) match
       case (l, r) if l.isEmpty && r.isEmpty => elem
       case (l, r) if l.isEmpty =>
         val rRet = r.mostRetweeted
@@ -148,36 +152,42 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet:
         val lRet = l.mostRetweeted
         if elem.retweets > lRet.retweets then elem else lRet
       case (l, r) =>
-        val s1 = elem.retweets
-        val w2 = l.mostRetweeted
-        val s2 = w2.retweets
-        val w3 = r.mostRetweeted
-        val s3 = w3.retweets
-        if s1 >= s2 && s1 >= s3 then elem
-        else if s2 >= s1 && s2 >= s3 then w2
-        else w3
-    }
-  }
+        val retw1 = elem.retweets
+        val mostRetw2 = l.mostRetweeted
+        val retw2 = mostRetw2.retweets
+        val mostRetw3 = r.mostRetweeted
+        val retw3 = mostRetw3.retweets
+        if retw1 >= retw2 && retw1 >= retw3 then
+          elem
+        else if retw2 >= retw1 && retw2 >= retw3 then
+          mostRetw2
+        else
+          mostRetw3
 
-  override def descendingByRetweet: TweetList = {
+  override def descendingByRetweet: TweetList =
     val r1 = ascendingByRetweet
-    def reverse(l1: TweetList, acc: TweetList): TweetList = {
-      if l1.isEmpty then acc
-      else reverse(l1.tail, Cons(l1.head, acc))
-    }
-    reverse(r1, Nil)
-  }
 
-  def ascendingByRetweet: TweetList = {
-    def run(set: TweetSet, acc: TweetList): TweetList = {
-      if set.isEmpty then acc
+    @tailrec
+    def reverse(l1: TweetList, acc: TweetList): TweetList =
+      if l1.isEmpty then
+        acc
+      else
+        reverse(l1.tail, Cons(l1.head, acc))
+
+    reverse(r1, Nil)
+
+
+  def ascendingByRetweet: TweetList =
+    def run(set: TweetSet, acc: TweetList): TweetList =
+      if set.isEmpty then
+        acc
       else
         val max = set.mostRetweeted
         val newSet = set.remove(max)
         run(newSet, Cons(max, acc))
-    }
+
     run(this, Nil)
-  }
+
 
   override def isEmpty: Boolean = false
 
@@ -215,19 +225,24 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet:
 
 trait TweetList:
   def head: Tweet
+
   def tail: TweetList
+
   def isEmpty: Boolean
+
   def foreach(f: Tweet => Unit): Unit =
     if !isEmpty then
       f(head)
       tail.foreach(f)
 
-object Nil extends TweetList:
+object Nil extends TweetList :
   def head = throw java.util.NoSuchElementException("head of EmptyList")
+
   def tail = throw java.util.NoSuchElementException("tail of EmptyList")
+
   def isEmpty = true
 
-class Cons(val head: Tweet, val tail: TweetList) extends TweetList:
+class Cons(val head: Tweet, val tail: TweetList) extends TweetList :
   def isEmpty = false
 
 
@@ -246,6 +261,6 @@ object GoogleVsApple:
    */
   lazy val trending: TweetList = googleTweets.union(appleTweets).descendingByRetweet
 
-object Main extends App:
+object Main extends App :
   // Print the trending tweets
   GoogleVsApple.trending foreach println
