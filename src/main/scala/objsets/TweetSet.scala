@@ -143,26 +143,26 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet :
   override def union(that: TweetSet): TweetSet = right.union(left.union(that)).incl(elem)
 
   override def mostRetweeted: Tweet =
-    (left, right) match
-      case (l, r) if l.isEmpty && r.isEmpty => elem
-      case (l, r) if l.isEmpty =>
-        val rRet = r.mostRetweeted
-        if elem.retweets > rRet.retweets then elem else rRet
-      case (l, r) if r.isEmpty =>
-        val lRet = l.mostRetweeted
-        if elem.retweets > lRet.retweets then elem else lRet
-      case (l, r) =>
-        val retw1 = elem.retweets
-        val mostRetw2 = l.mostRetweeted
-        val retw2 = mostRetw2.retweets
-        val mostRetw3 = r.mostRetweeted
-        val retw3 = mostRetw3.retweets
-        if retw1 >= retw2 && retw1 >= retw3 then
-          elem
-        else if retw2 >= retw1 && retw2 >= retw3 then
-          mostRetw2
-        else
-          mostRetw3
+
+    def countOneNonEmptyBranch(branch: TweetSet, currTweet: Tweet): Tweet =
+      val branchTweet = branch.mostRetweeted
+      if branchTweet.retweets > currTweet.retweets then
+        branchTweet
+      else
+        currTweet
+
+    def countTwoNonEmptyBranches(): Tweet =
+      val leftAndCurrCompare = countOneNonEmptyBranch(left, elem)
+      countOneNonEmptyBranch(right, leftAndCurrCompare)
+
+    if left.isEmpty && right.isEmpty then
+      elem
+    else if left.isEmpty then
+      countOneNonEmptyBranch(right, elem)
+    else if right.isEmpty then
+      countOneNonEmptyBranch(left, elem)
+    else
+      countTwoNonEmptyBranches()
 
   override def descendingByRetweet: TweetList =
     val r1 = ascendingByRetweet
