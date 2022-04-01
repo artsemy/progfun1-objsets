@@ -134,50 +134,33 @@ class Empty extends TweetSet :
 class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet :
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet =
-    val newAcc = if p(elem) then
-      acc.incl(elem)
-    else
-      acc
-    left.union(right).filterAcc(p, newAcc)
+    var acc2: TweetSet = Empty()
+
+    this.foreach(tw => if p(tw) then acc2 = acc2.incl(tw))
+
+    acc2
 
   override def union(that: TweetSet): TweetSet = right.union(left.union(that)).incl(elem)
 
   override def mostRetweeted: Tweet =
+    var maxRet = elem.retweets
+    var maxTweet = elem
 
-    def countOneNonEmptyBranch(branch: TweetSet, currTweet: Tweet): Tweet =
-      val branchTweet = branch.mostRetweeted
-      if branchTweet.retweets > currTweet.retweets then
-        branchTweet
-      else
-        currTweet
+    this.remove(elem).foreach(tw =>
+      if tw.retweets > maxRet then
+        maxRet = tw.retweets; maxTweet = tw)
 
-    def countTwoNonEmptyBranches(): Tweet =
-      val leftAndCurrCompare = countOneNonEmptyBranch(left, elem)
-      countOneNonEmptyBranch(right, leftAndCurrCompare)
-
-    if left.isEmpty && right.isEmpty then
-      elem
-    else if left.isEmpty then
-      countOneNonEmptyBranch(right, elem)
-    else if right.isEmpty then
-      countOneNonEmptyBranch(left, elem)
-    else
-      countTwoNonEmptyBranches()
+    maxTweet
 
   override def descendingByRetweet: TweetList =
-    val r1 = ascendingByRetweet
+    var acc: TweetList = Nil
 
-    @tailrec
-    def reverse(l1: TweetList, acc: TweetList): TweetList =
-      if l1.isEmpty then
-        acc
-      else
-        reverse(l1.tail, Cons(l1.head, acc))
+    ascendingByRetweet.foreach(tw => acc = Cons(tw, acc))
 
-    reverse(r1, Nil)
-
+    acc
 
   def ascendingByRetweet: TweetList =
+    @tailrec
     def run(set: TweetSet, acc: TweetList): TweetList =
       if set.isEmpty then
         acc
