@@ -134,21 +134,18 @@ class Empty extends TweetSet :
 class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet :
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet =
-    var acc2: TweetSet = Empty()
-
-    this.foreach(tw => if p(tw) then acc2 = acc2.incl(tw))
-
-    acc2
+    val elemAcc = if p(elem) then acc.incl(elem) else acc
+    val leftAcc = left.filterAcc(p, elemAcc)
+    right.filterAcc(p, leftAcc)
 
   override def union(that: TweetSet): TweetSet = right.union(left.union(that)).incl(elem)
 
   override def mostRetweeted: Tweet =
-    var maxRet = elem.retweets
     var maxTweet = elem
 
     this.remove(elem).foreach(tw =>
-      if tw.retweets > maxRet then
-        maxRet = tw.retweets; maxTweet = tw)
+      if tw.retweets > maxTweet.retweets then
+        maxTweet = tw)
 
     maxTweet
 
